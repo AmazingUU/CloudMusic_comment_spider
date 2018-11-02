@@ -112,14 +112,12 @@ if __name__ == '__main__':
     list_name = response['result']['name']
     updatetime = timestamp2datetime(response['result']['trackUpdateTime'])
     song_list = response['result']['tracks']
-    # for i in range(len(song_list)):
-    i = 0
-    rank = i + 1
-    song_name = song_list[i]['name']
-    song_id = song_list[i]['id']
-    singer = song_list[i]['artists'][0]['name']
-
-    print(rank,song_name,song_id,singer,updatetime)
+    for i in range(len(song_list)):
+        rank = i + 1
+        song_name = song_list[i]['name']
+        song_id = song_list[i]['id']
+        singer = song_list[i]['artists'][0]['name']
+        print(rank,song_name,song_id,singer,updatetime)
 
     # response = post(url,form_data)
     # for data in get_hot_comment(response):
@@ -139,6 +137,8 @@ if __name__ == '__main__':
     # time = int(1541153622858 / 1000)
     # dateArray = datetime.datetime.fromtimestamp(time)
     # print(dateArray.strftime("%Y-%m-%d %H:%M:%S"))
+
+# create table if not exists day_hot_song(id int primary key auto_increment,ranking int(4),song_id int(15),name varchar(50),singer varchar(20),update_time varchar(30));
 
 # 下面是网易云JS中的关键代码
 # var bZH3x=window.asrsea(JSON.stringify(i2x),
