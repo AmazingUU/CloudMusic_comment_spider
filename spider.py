@@ -1,11 +1,13 @@
 import base64
 import binascii
+import datetime
 import json
 from random import random
 
 import requests
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
+from bs4 import BeautifulSoup
 
 
 def AES_encrypt(text, key):  # AES加密
@@ -49,11 +51,47 @@ def get_encSecKey(random_str, second_params, third_params):
     encSecKey = binascii.b2a_hex(encrypt_text).decode('utf-8')  # encrypt_text为二进制，转为十六进制然后再解码成字符串才是最后要post的密文
     return encSecKey
 
+def get_html(url):
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
+    r = requests.get(url, headers=headers)
+    # html = BeautifulSoup(r.text,'lxml')
+    response = json.loads(r.text)
+    return response
 
 def post(url,form_data):
    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
    r = requests.post(url, data=form_data, headers=headers)
-   return r.text
+   response = json.loads(r.text)
+   return response
+
+def get_hot_comment(response):
+    hot_comment_list = response['hotComments']
+    for hot_comment in hot_comment_list:
+        data = {}
+        data['username'] = hot_comment['user']['nickname']
+        data['content'] = hot_comment['content']
+        data['likeCount'] = hot_comment['likedCount']
+        time = int(hot_comment['time'] / 1000)
+        dateArray = datetime.datetime.fromtimestamp(time)
+        data['datatime'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
+        yield data
+
+def get_comment(response):
+    comment_list = response['comments']
+    for comment in comment_list:
+        data = {}
+        data['username'] = comment['user']['nickname']
+        data['content'] = comment['content']
+        data['likeCount'] = comment['likedCount']
+        time = int(comment['time'] / 1000)
+        dateArray = datetime.datetime.fromtimestamp(time)
+        data['datatime'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
+        yield data
+
+def timestamp2datetime(timestamp):
+    time = int(timestamp / 1000)
+    dateArray = datetime.datetime.fromtimestamp(time)
+    return dateArray.strftime("%Y-%m-%d %H:%M:%S")
 
 if __name__ == '__main__':
     url = 'https://music.163.com/weapi/v1/resource/comments/R_SO_4_1311319058?csrf_token='
@@ -69,11 +107,38 @@ if __name__ == '__main__':
     encSecKey = get_encSecKey(random_str, second_params, third_params)
     form_data = {'params': params,
                  'encSecKey': encSecKey}
-    r = requests.post(url, data=form_data, headers=headers)
-    response = json.loads(r.text)
-    hot_comment_list = response['hotComments']
-    comment_list = response['comments']
-    print(hot_comment_list)
+
+    response = get_html('http://music.163.com/api/playlist/detail?id=19723756')
+    list_name = response['result']['name']
+    updatetime = timestamp2datetime(response['result']['trackUpdateTime'])
+    song_list = response['result']['tracks']
+    # for i in range(len(song_list)):
+    i = 0
+    rank = i + 1
+    song_name = song_list[i]['name']
+    song_id = song_list[i]['id']
+    singer = song_list[i]['artists'][0]['name']
+
+    print(rank,song_name,song_id,singer,updatetime)
+
+    # response = post(url,form_data)
+    # for data in get_hot_comment(response):
+    #     print()
+
+
+    # r = requests.post(url, data=form_data, headers=headers)
+    # response = json.loads(r.text)
+    # hot_comment_list = response['hotComments']
+    # comment_list = response['comments']
+    # # print(hot_comment_list)
+    # for hot_comment in hot_comment_list:
+    #     data = {}
+    #     data['username'] = hot_comment['user']['nickname']
+    #     data['content'] = hot_comment['content']
+    #     data['likeCount'] = hot_comment['likedCount']
+    # time = int(1541153622858 / 1000)
+    # dateArray = datetime.datetime.fromtimestamp(time)
+    # print(dateArray.strftime("%Y-%m-%d %H:%M:%S"))
 
 # 下面是网易云JS中的关键代码
 # var bZH3x=window.asrsea(JSON.stringify(i2x),
