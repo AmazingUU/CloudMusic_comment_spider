@@ -7,7 +7,9 @@ from random import random
 import requests
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
-from bs4 import BeautifulSoup
+
+from const import const
+from db_helper import DbHelper
 
 
 def AES_encrypt(text, key):  # AES加密
@@ -70,10 +72,10 @@ def get_hot_comment(response):
         data = {}
         data['username'] = hot_comment['user']['nickname']
         data['content'] = hot_comment['content']
-        data['likeCount'] = hot_comment['likedCount']
+        data['like_count'] = hot_comment['likedCount']
         time = int(hot_comment['time'] / 1000)
         dateArray = datetime.datetime.fromtimestamp(time)
-        data['datatime'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
+        data['comment_time'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
         yield data
 
 def get_comment(response):
@@ -82,10 +84,10 @@ def get_comment(response):
         data = {}
         data['username'] = comment['user']['nickname']
         data['content'] = comment['content']
-        data['likeCount'] = comment['likedCount']
+        data['like_count'] = comment['likedCount']
         time = int(comment['time'] / 1000)
         dateArray = datetime.datetime.fromtimestamp(time)
-        data['datatime'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
+        data['comment_time'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
         yield data
 
 def timestamp2datetime(timestamp):
@@ -93,31 +95,56 @@ def timestamp2datetime(timestamp):
     dateArray = datetime.datetime.fromtimestamp(time)
     return dateArray.strftime("%Y-%m-%d %H:%M:%S")
 
+def get_day_hot_song(response):
+    # list_name = response['result']['name']
+    song_list = response['result']['tracks']
+    for i in range(len(song_list)):
+        data = {}
+        data['ranking'] = i + 1
+        data['name'] = song_list[i]['name']
+        data['song_id'] = song_list[i]['id']
+        data['singer'] = song_list[i]['artists'][0]['name']
+        yield data
+
 if __name__ == '__main__':
-    url = 'https://music.163.com/weapi/v1/resource/comments/R_SO_4_1311319058?csrf_token='
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
+    # configs = {'host': '127.0.0.1', 'user': 'root', 'password': 'admin', 'db': 'cloud_music'}
+    db = DbHelper()
+    db.connenct(const.DB_CONFIGS)
+
+    comment_url = 'https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token='
+    # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
     # 下面四个参数对应JS中的四个输入参数
-    first_param = '{rid: "", offset: "0", total: "true", limit: "20", csrf_token: ""}'  # 经试验rid这个字段无用
-    second_params = '010001'
-    third_params = '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
-    forth_param = '0CoJUm6Qyw8W8jud'
+    # first_param = '{rid: "", offset: "0", total: "true", limit: "20", csrf_token: ""}'  # 经试验rid这个字段无用
+    # second_params = '010001'
+    # third_params = '00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7'
+    # forth_param = '0CoJUm6Qyw8W8jud'
     random_str = create_random_str(16)
-    params = get_params(first_param, forth_param, random_str)
-    encSecKey = get_encSecKey(random_str, second_params, third_params)
+    params = get_params(const.FIRST_PARAM, const.FORTH_PARAM, random_str)
+    encSecKey = get_encSecKey(random_str, const.SECOND_PARAM, const.THIRD_PARAM)
     form_data = {'params': params,
                  'encSecKey': encSecKey}
 
-    response = get_html('http://music.163.com/api/playlist/detail?id=19723756')
-    list_name = response['result']['name']
-    updatetime = timestamp2datetime(response['result']['trackUpdateTime'])
-    song_list = response['result']['tracks']
-    for i in range(len(song_list)):
-        rank = i + 1
-        song_name = song_list[i]['name']
-        song_id = song_list[i]['id']
-        singer = song_list[i]['artists'][0]['name']
-        print(rank,song_name,song_id,singer,updatetime)
+    response = get_html(const.DAY_LIST_URL)
+    for data in get_day_hot_song(response):
+        db.save_one_data_to_day_hot_song(data)
+        song_id = data['song_id']
+        link = comment_url.format(song_id)
+        resp = post(link,form_data)
+        for d in get_hot_comment(resp):
+            d['song_id'] = song_id
+            db.save_one_data_to_hot_comment(d)
+
+
+    # list_name = response['result']['name']
+    # update_time = timestamp2datetime(response['result']['trackUpdateTime'])
+    # song_list = response['result']['tracks']
+    # for i in range(len(song_list)):
+    #     ranking = i + 1
+    #     song_name = song_list[i]['name']
+    #     song_id = song_list[i]['id']
+    #     singer = song_list[i]['artists'][0]['name']
+
+        # print(ranking,song_name,song_id,singer,update_time)
 
     # response = post(url,form_data)
     # for data in get_hot_comment(response):
@@ -138,7 +165,9 @@ if __name__ == '__main__':
     # dateArray = datetime.datetime.fromtimestamp(time)
     # print(dateArray.strftime("%Y-%m-%d %H:%M:%S"))
 
-# create table if not exists day_hot_song(id int primary key auto_increment,ranking int(4),song_id int(15),name varchar(50),singer varchar(20),update_time varchar(30));
+# create table if not exists day_hot_song(id int primary key auto_increment,ranking int(4),song_id int(15),name varchar(50),singer varchar(20),create_time datetime);
+
+# create table if not exists hot_comment(id int primary key auto_increment,song_id int(15),username varchar(30),content text,like_count int(7),comment_time varchar(30),create_time datetime);
 
 # 下面是网易云JS中的关键代码
 # var bZH3x=window.asrsea(JSON.stringify(i2x),
