@@ -42,7 +42,7 @@ class DbHelper(object):
                 # self.mutex = 0  # 解锁
                 print('{}\t{}\t{}\t{} insert into day_hot_song'.format(data['ranking'], data['song_id'], data['name'], data['singer']))
         except Exception as e:
-            print('save_one_data_to_detail fail,error:' + str(e))
+            print('save_one_data_to_day_hot_song fail,error:' + str(e))
         finally:
             self.mutex = 0  # 解锁
 
@@ -60,7 +60,7 @@ class DbHelper(object):
                 print('{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'],data['username'], data['content'], data['like_count'],
                                                                       data['comment_time']))
         except Exception as e:
-            print('save_one_data_to_keyword,error:', str(e))
+            print('save_one_data_to_hot_comment,error:', str(e))
         finally:
             self.mutex = 0  # 解锁
 

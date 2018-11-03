@@ -2,7 +2,10 @@ import base64
 import binascii
 import datetime
 import json
+import time
+from queue import Queue
 from random import random
+from threading import Thread
 
 import requests
 from Crypto.Cipher import AES
@@ -106,10 +109,31 @@ def get_day_hot_song(response):
         data['singer'] = song_list[i]['artists'][0]['name']
         yield data
 
+def put_into_queue(links,song_ids,form_data,queue):
+    for i in range(len(links)):
+        resp = post(links[i],form_data)
+        dict = {'song_id':song_ids[i],'resp':resp}
+        queue.put_nowait(dict)
+
+def get_from_queue(db,queue):
+    while True:
+        try:
+            dict = queue.get_nowait()
+            for data in get_hot_comment(dict['resp']):
+                data['song_id'] = dict['song_id']
+                db.save_one_data_to_hot_comment(data)
+            queue.task_done()
+        except:
+            print("queue is empty wait for a while")
+            time.sleep(1)
+
 if __name__ == '__main__':
+    start_time = time.time()
     # configs = {'host': '127.0.0.1', 'user': 'root', 'password': 'admin', 'db': 'cloud_music'}
     db = DbHelper()
     db.connenct(const.DB_CONFIGS)
+
+    queue = Queue()
 
     comment_url = 'https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token='
     # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
@@ -125,15 +149,37 @@ if __name__ == '__main__':
                  'encSecKey': encSecKey}
 
     response = get_html(const.DAY_LIST_URL)
+    links = []
+    song_ids = []
     for data in get_day_hot_song(response):
         db.save_one_data_to_day_hot_song(data)
         song_id = data['song_id']
         link = comment_url.format(song_id)
-        resp = post(link,form_data)
-        for d in get_hot_comment(resp):
-            d['song_id'] = song_id
-            db.save_one_data_to_hot_comment(d)
+        links.append(link)
+        song_ids.append(song_id)
 
+    put_thread = Thread(target=put_into_queue,args=(links,song_ids,form_data,queue))
+    put_thread.setDaemon(True)
+    put_thread.start()
+
+    time.sleep(2)
+
+    for i in range(3):
+        get_thread = Thread(target=get_from_queue,args=(db,queue))
+        get_thread.setDaemon(True)
+        get_thread.start()
+
+    queue.join()
+
+
+        # resp = post(link,form_data)
+        # for d in get_hot_comment(resp):
+        #     d['song_id'] = song_id
+        #     db.save_one_data_to_hot_comment(d)
+
+    db.close()
+    end_time = time.time()
+    print('total time:',str(end_time - start_time))
 
     # list_name = response['result']['name']
     # update_time = timestamp2datetime(response['result']['trackUpdateTime'])
