@@ -3,8 +3,6 @@ import binascii
 import datetime
 import json
 import time
-from multiprocessing.dummy import Manager as ThreadManager
-from multiprocessing.dummy import Pool as ThreadPool
 from queue import Queue
 from random import random
 from threading import Thread
@@ -93,12 +91,6 @@ def get_comment(response):
         time = int(comment['time'] / 1000)
         dateArray = datetime.datetime.fromtimestamp(time)
         data['comment_time'] = dateArray.strftime("%Y-%m-%d %H:%M:%S")
-        try:
-            data['beReplied_content'] = comment['beReplied'][0]['content']
-            data['beReplied_user'] = comment['beReplied'][0]['user']['nickname']
-        except:
-            data['beReplied_content'] = '无'
-            data['beReplied_user'] = '无'
         yield data
 
 def timestamp2datetime(timestamp):
@@ -135,36 +127,13 @@ def get_from_queue(db,queue):
             print("queue is empty wait for a while")
             time.sleep(1)
 
-
-def put_into_pool(link,song_id,form_data,queue):
-    resp = post(link,form_data)
-    dict = {'song_id':song_id,'resp':resp}
-    queue.put_nowait(dict)
-
-def get_from_pool(db,queue):
-    while True:
-        try:
-            dict = queue.get_nowait()
-            for data in get_hot_comment(dict['resp']):
-                data['song_id'] = dict['song_id']
-                db.save_one_data_to_hot_comment(data)
-            for d in get_comment(dict['resp']):
-                d['song_id'] = dict['song_id']
-                db.save_one_data_to_comment(d)
-            queue.task_done()
-        except:
-            print("queue is empty wait for a while")
-            time.sleep(1)
-
 if __name__ == '__main__':
     start_time = time.time()
     # configs = {'host': '127.0.0.1', 'user': 'root', 'password': 'admin', 'db': 'cloud_music'}
     db = DbHelper()
     db.connenct(const.DB_CONFIGS)
 
-    put_thread_pool = ThreadPool(3)
-    get_thread_pool = ThreadPool(3)
-    queue = ThreadManager().Queue()
+    queue = Queue()
 
     comment_url = 'https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token='
     # headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'}
@@ -186,40 +155,27 @@ if __name__ == '__main__':
         db.save_one_data_to_day_hot_song(data)
         song_id = data['song_id']
         link = comment_url.format(song_id)
-        # links.append(link)
-        # song_ids.append(song_id)
+        links.append(link)
+        song_ids.append(song_id)
 
-        resp = post(link,form_data)
-        for d in get_comment(resp):
-            d['song_id'] = song_id
-            db.save_one_data_to_comment(d)
+    put_thread = Thread(target=put_into_queue,args=(links,song_ids,form_data,queue))
+    put_thread.setDaemon(True)
+    put_thread.start()
 
-    # for i in range(len(links)):
-    #     put_thread_pool.apply_async(put_into_pool,(links[i],song_ids[i],form_data,queue))
-    #
-    # time.sleep(1)
-    #
-    # for i in range(3):
-    #     get_thread_pool.apply_async(get_from_pool,(db,queue))
+    time.sleep(2)
 
-    # put_thread = Thread(target=put_into_queue,args=(links,song_ids,form_data,queue))
-    # put_thread.setDaemon(True)
-    # put_thread.start()
-    #
-    # time.sleep(2)
-    #
-    # for i in range(3):
-    #     get_thread = Thread(target=get_from_queue,args=(db,queue))
-    #     get_thread.setDaemon(True)
-    #     get_thread.start()
+    for i in range(3):
+        get_thread = Thread(target=get_from_queue,args=(db,queue))
+        get_thread.setDaemon(True)
+        get_thread.start()
 
-    # queue.join()
+    queue.join()
 
-    # for link in links:
-    #     resp = post(link,form_data)
-    #     for d in get_comment(resp):
-    #         d['song_id'] = song_id
-    #         db.save_one_data_to_comment(d)
+
+        # resp = post(link,form_data)
+        # for d in get_hot_comment(resp):
+        #     d['song_id'] = song_id
+        #     db.save_one_data_to_hot_comment(d)
 
     db.close()
     end_time = time.time()
@@ -258,8 +214,6 @@ if __name__ == '__main__':
 # create table if not exists day_hot_song(id int primary key auto_increment,ranking int(4),song_id int(15),name varchar(50),singer varchar(20),create_time datetime);
 
 # create table if not exists hot_comment(id int primary key auto_increment,song_id int(15),username varchar(30),content text,like_count int(7),comment_time varchar(30),create_time datetime);
-
-# create table if not exists comment(id int primary key auto_increment,song_id int(15),username varchar(30),content text,like_count int(7),comment_time varchar(30),beReplied_content text,beReplied_user varchar(30),create_time datetime);
 
 # 下面是网易云JS中的关键代码
 # var bZH3x=window.asrsea(JSON.stringify(i2x),

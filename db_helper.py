@@ -64,6 +64,25 @@ class DbHelper(object):
         finally:
             self.mutex = 0  # 解锁
 
+
+    def save_one_data_to_comment(self, data):
+        while self.mutex == 1:  # connetion正在被其他线程使用，需要等待
+            time.sleep(1)
+            print('db connect is using...')
+        self.mutex = 1  # 锁定
+        try:
+            with self.db.cursor() as cursor:
+                sql = 'insert into comment(song_id,username,content,like_count,comment_time,beReplied_content,beReplied_user,create_time) values(%s,%s,%s,%s,%s,%s,%s,now())'
+                cursor.execute(sql, (data['song_id'],data['username'], data['content'], data['like_count'], data['comment_time'],data['beReplied_content'],data['beReplied_user']))
+                self.db.commit()
+                # self.mutex = 0  # 解锁
+                print('{}\t{}\t{}\t{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'],data['username'], data['content'], data['like_count'],
+                                                                      data['comment_time'],data['beReplied_content'],data['beReplied_user']))
+        except Exception as e:
+            print('save_one_data_to_hot_comment,error:', str(e))
+        finally:
+            self.mutex = 0  # 解锁
+
     # def find_all_detail(self):
     #     try:
     #         with self.db.cursor() as cursor:
