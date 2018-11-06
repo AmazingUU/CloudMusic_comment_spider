@@ -40,7 +40,8 @@ class DbHelper(object):
                 cursor.execute(sql, (data['ranking'], data['song_id'], data['name'], data['singer']))
                 self.db.commit()
                 # self.mutex = 0  # 解锁
-                print('{}\t{}\t{}\t{} insert into day_hot_song'.format(data['ranking'], data['song_id'], data['name'], data['singer']))
+                print('{}\t{}\t{}\t{} insert into day_hot_song'.format(data['ranking'], data['song_id'], data['name'],
+                                                                       data['singer']))
         except Exception as e:
             print('save_one_data_to_day_hot_song fail,error:' + str(e))
         finally:
@@ -54,16 +55,18 @@ class DbHelper(object):
         try:
             with self.db.cursor() as cursor:
                 sql = 'insert into hot_comment(song_id,username,content,like_count,comment_time,create_time) values(%s,%s,%s,%s,%s,now())'
-                cursor.execute(sql, (data['song_id'],data['username'], data['content'], data['like_count'], data['comment_time']))
+                cursor.execute(sql, (
+                    data['song_id'], data['username'], data['content'], data['like_count'], data['comment_time']))
                 self.db.commit()
                 # self.mutex = 0  # 解锁
-                print('{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'],data['username'], data['content'], data['like_count'],
-                                                                      data['comment_time']))
+                print(
+                    '{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'], data['username'], data['content'],
+                                                                    data['like_count'],
+                                                                    data['comment_time']))
         except Exception as e:
             print('save_one_data_to_hot_comment,error:', str(e))
         finally:
             self.mutex = 0  # 解锁
-
 
     def save_one_data_to_comment(self, data):
         while self.mutex == 1:  # connetion正在被其他线程使用，需要等待
@@ -73,11 +76,16 @@ class DbHelper(object):
         try:
             with self.db.cursor() as cursor:
                 sql = 'insert into comment(song_id,username,content,like_count,comment_time,beReplied_content,beReplied_user,create_time) values(%s,%s,%s,%s,%s,%s,%s,now())'
-                cursor.execute(sql, (data['song_id'],data['username'], data['content'], data['like_count'], data['comment_time'],data['beReplied_content'],data['beReplied_user']))
+                cursor.execute(sql, (
+                    data['song_id'], data['username'], data['content'], data['like_count'], data['comment_time'],
+                    data['beReplied_content'], data['beReplied_user']))
                 self.db.commit()
                 # self.mutex = 0  # 解锁
-                print('{}\t{}\t{}\t{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'],data['username'], data['content'], data['like_count'],
-                                                                      data['comment_time'],data['beReplied_content'],data['beReplied_user']))
+                print('{}\t{}\t{}\t{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'], data['username'],
+                                                                                  data['content'], data['like_count'],
+                                                                                  data['comment_time'],
+                                                                                  data['beReplied_content'],
+                                                                                  data['beReplied_user']))
         except Exception as e:
             print('save_one_data_to_hot_comment,error:', str(e))
         finally:
