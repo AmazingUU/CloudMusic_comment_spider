@@ -99,6 +99,7 @@ def get_comment(response):
         except:
             data['beReplied_content'] = '无'
             data['beReplied_user'] = '无'
+
         yield data
 
 def timestamp2datetime(timestamp):
@@ -186,21 +187,21 @@ if __name__ == '__main__':
         db.save_one_data_to_day_hot_song(data)
         song_id = data['song_id']
         link = comment_url.format(song_id)
-        # links.append(link)
-        # song_ids.append(song_id)
+        links.append(link)
+        song_ids.append(song_id)
 
-        resp = post(link,form_data)
-        for d in get_comment(resp):
-            d['song_id'] = song_id
-            db.save_one_data_to_comment(d)
+        # resp = post(link,form_data)
+        # for d in get_comment(resp):
+        #     d['song_id'] = song_id
+        #     db.save_one_data_to_comment(d)
 
-    # for i in range(len(links)):
-    #     put_thread_pool.apply_async(put_into_pool,(links[i],song_ids[i],form_data,queue))
-    #
-    # time.sleep(1)
-    #
-    # for i in range(3):
-    #     get_thread_pool.apply_async(get_from_pool,(db,queue))
+    for i in range(len(links)):
+        put_thread_pool.apply_async(put_into_pool,(links[i],song_ids[i],form_data,queue))
+
+    time.sleep(1)
+
+    for i in range(3):
+        get_thread_pool.apply_async(get_from_pool,(db,queue))
 
     # put_thread = Thread(target=put_into_queue,args=(links,song_ids,form_data,queue))
     # put_thread.setDaemon(True)
