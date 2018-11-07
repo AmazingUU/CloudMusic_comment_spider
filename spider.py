@@ -35,19 +35,24 @@ def create_random_str(num):  # 生成num位随机字符串
 
 
 def get_params(first_param, forth_param, random_str):  # 产生POST的第一个参数
-    encText = AES_encrypt(first_param, forth_param).decode('utf-8')
+    encText = AES_encrypt(first_param, forth_param).decode('utf-8')  # AES加密出来是byte类型，再次加密时需要先将其转为String
     params = AES_encrypt(encText, random_str)
     return params
 
 
-def get_encSecKey(random_str, second_params, third_params):  # 产生POST的第二个参数
-    n = int(third_params, 16)  # RSA modulus,RSA算法中大素数相乘的结果，16进制
-    e = int(second_params, 16)  # RSA算法中的e，和n一起组成公钥(n,e)，16进制
+def RSA_encrypt(n_str, e_str, random_str):  # RSA加密
+    n = int(n_str, 16)  # RSA modulus,RSA算法中大素数相乘的结果，16进制
+    e = int(e_str, 16)  # RSA算法中的e，和n一起组成公钥(n,e)，16进制
     cryptor = RSA.construct((n, e))  # 构造加密器
-    # 网易云JS中的encryptedString()将16为随机字符串倒序了，所以要生成与JS一样的密文，这里也要倒序，而且下面加密时，要求为字节，所以编码为ascii码
+    # 网易云JS中的encryptedString()将16位随机字符串倒序了，所以要生成与JS一样的密文，这里也要倒序，而且下面加密时，要求为字节，所以编码为ascii码
     text = random_str[::-1].encode('ascii')
     encrypt_text = cryptor.encrypt(text, '')[0]  # 网易云JS中第二个参数为空，这里也为空。查看encrypt()源码发现会返回两个值，第一个是密文，第二个值总为空
-    encSecKey = binascii.b2a_hex(encrypt_text).decode('utf-8')  # encrypt_text为二进制，转为十六进制然后再解码成字符串才是最后要post的密文
+    encrypt_text = binascii.b2a_hex(encrypt_text).decode('utf-8')  # encrypt_text为二进制，转为十六进制然后再解码成字符串才是最后要post的密文
+    return encrypt_text
+
+
+def get_encSecKey(random_str, second_params, third_params):  # 产生POST的第二个参数
+    encSecKey = RSA_encrypt(third_params, second_params, random_str)
     return encSecKey
 
 
