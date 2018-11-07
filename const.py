@@ -17,7 +17,7 @@ class _const:
 const = _const()
 
 # 数据库配置
-const.DB_CONFIGS = {'host': '127.0.0.1', 'user': 'root', 'password': 'admin', 'db': 'cloud_music'}
+const.DB_CONFIGS = {'host': '***', 'user': '***', 'password': '***', 'db': '***'}
 # 排行榜api，本项目爬取云音乐飙升榜
 # http://music.163.com/api/playlist/detail?id=2884035 # 网易原创歌曲榜
 # http://music.163.com/api/playlist/detail?id=19723756 # 云音乐飙升榜
