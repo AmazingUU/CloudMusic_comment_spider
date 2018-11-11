@@ -101,12 +101,6 @@ def get_comment(response):  # 从返回的评论JSON中分析出最新评论的�
         yield data
 
 
-def timestamp2datetime(timestamp):  # 时间戳转日期时间格式
-    time = int(timestamp / 1000)
-    dateArray = datetime.datetime.fromtimestamp(time)
-    return dateArray.strftime("%Y-%m-%d %H:%M:%S")
-
-
 def get_day_hot_song(response):  # 获取云音乐飙升榜的歌曲相关信息
     song_list = response['result']['tracks']
     for i in range(len(song_list)):
