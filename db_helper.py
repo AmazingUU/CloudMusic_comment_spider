@@ -81,13 +81,13 @@ class DbHelper(object):
                     data['beReplied_content'], data['beReplied_user']))
                 self.db.commit()
                 # self.mutex = 0  # 解锁
-                print('{}\t{}\t{}\t{}\t{}\t{}\t{} insert into hot_comment'.format(data['song_id'], data['username'],
+                print('{}\t{}\t{}\t{}\t{}\t{}\t{} insert into comment'.format(data['song_id'], data['username'],
                                                                                   data['content'], data['like_count'],
                                                                                   data['comment_time'],
                                                                                   data['beReplied_content'],
                                                                                   data['beReplied_user']))
         except Exception as e:
-            print('save_one_data_to_hot_comment,error:', str(e))
+            print('save_one_data_to_comment,error:', str(e))
         finally:
             self.mutex = 0  # 解锁
 
