@@ -2,6 +2,7 @@
 网易云音乐评论爬虫
 
 # 项目博客
+![Python 网易云音乐评论爬虫][4]
 
 # 简介
 爬取网易云音乐排行榜中云音乐飙升榜的歌曲以及对应的热门评论和前20最新评论。
@@ -23,3 +24,4 @@
   [1]: https://github.com/AmazingUU/CloudMusic_comment_spider/blob/master/imgs/day_hot_song.png
   [2]: https://github.com/AmazingUU/CloudMusic_comment_spider/blob/master/imgs/hot_comment.png
   [3]: https://github.com/AmazingUU/CloudMusic_comment_spider/blob/master/imgs/comment.png
+  [4]: https://blog.csdn.net/AmazingUU/article/details/83832213
