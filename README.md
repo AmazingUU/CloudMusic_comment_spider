@@ -20,6 +20,8 @@
 
 ![前20条最新评论][3]
 
+# 注意事项
+仅供学习交流使用
 
   [1]: https://github.com/AmazingUU/CloudMusic_comment_spider/blob/master/imgs/day_hot_song.png
   [2]: https://github.com/AmazingUU/CloudMusic_comment_spider/blob/master/imgs/hot_comment.png
